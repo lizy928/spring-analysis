@@ -13,3 +13,8 @@ target/
 hs_err_pid*
 /.idea/
 /spring.iml
+
+.gradle
+gradle/
+gradlew/
+gradlew.bat

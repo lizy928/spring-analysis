@@ -138,7 +138,7 @@ public class SimpleBean {
 
 ![ResourceLoader继承体系](images/ResourceLoader.jpg)
 
-ResourceLoader代表了**加载资源的一种方式，正是策略模式的实现**。
+ResourceLoader代表了**加载资源的一种方式，正是策略模式的实现**。详见：https://blog.csdn.net/zpwangshisuifeng/article/details/100103528
 
 构造器源码:
 
@@ -214,6 +214,51 @@ protected ConfigurableEnvironment createEnvironment() {
 }
 ```
 
+StandardEnvironment
+
+适用于“标准”（即非网络）应用程序的Environment实现。
+除了ConfigurableEnvironment的常用功能（例如属性解析和与配置文件相关的操作）之外，此实现还配置了两个默认属性源，按以下顺序搜索：
+	**系统属性**
+	**系统环境变量**
+
+```java
+public class StandardEnvironment extends AbstractEnvironment {
+
+   /** 系统环境属性源名称：“systemEnvironment” */
+   public static final String SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME = "systemEnvironment";
+
+   /** JVM 系统属性属性源名称：“systemProperties*/
+   public static final String SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME = "systemProperties";
+
+
+   /**
+    * 目前在属性“systemProperties”将优先于“systemEnvironment” 。
+    * Java environment:
+    * <ul>
+    * <li>{@value #SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME}
+    * <li>{@value #SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME}
+    * </ul>
+    * <p>Properties present in {@value #SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME} will
+    * take precedence over those in {@value #SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME}.
+    * @see AbstractEnvironment#customizePropertySources(MutablePropertySources)
+    * @see #getSystemProperties()
+    * @see #getSystemEnvironment()
+    */
+   @Override
+   protected void customizePropertySources(MutablePropertySources propertySources) {
+      propertySources.addLast(new MapPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, getSystemProperties()));
+      propertySources.addLast(new SystemEnvironmentPropertySource(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, getSystemEnvironment()));
+   }
+
+}
+```
+
+![image-20210714125957207](E:\workspace\spring-analysis\note\${images}\image-20210714125957207.png)
+
+![image-20210714130024993](E:\workspace\spring-analysis\note\${images}\image-20210714130024993.png)
+
+
+
 #### Environment接口
 
 继承体系:
@@ -271,7 +316,8 @@ public AbstractEnvironment() {
 
 ![PropertySources继承体系](images/PropertySources.jpg)
 
-此接口实际上是PropertySource的容器，默认的MutablePropertySources实现内部含有一个CopyOnWriteArrayList作为存储载体。
+> 此接口实际上是PropertySource的容器，默认的MutablePropertySources实现内部含有一个**CopyOnWriteArrayList**作为存储载体。
+>
 
 StandardEnvironment.customizePropertySources:
 
@@ -521,6 +567,8 @@ public void validateRequiredProperties() {
 
 requiredProperties是通过setRequiredProperties方法设置的，保存在一个list里面，默认是空的，也就是不需要校验任何属性。
 
+（返回标记为必需但在验证时不存在的属性集。）
+
 ### BeanFactory创建
 
 由obtainFreshBeanFactory调用AbstractRefreshableApplicationContext.refreshBeanFactory:
@@ -606,6 +654,8 @@ EntityResolver接口在org.xml.sax中定义。DelegatingEntityResolver用于sche
 
 
 ##### 路径解析(Ant)
+
+使用给定的 XmlBeanDefinitionReader 加载 bean 定义。bean 工厂的生命周期由refreshBeanFactory方法处理； 因此，此方法仅用于加载和/或注册 bean 
 
 ```java
 protected void loadBeanDefinitions(XmlBeanDefinitionReader reader) {
@@ -850,6 +900,8 @@ protected BeanDefinitionDocumentReader createBeanDefinitionDocumentReader() {
       //反射
       (BeanUtils.instantiateClass(this.documentReaderClass));
 }
+//创建BeanDefinitionDocumentReader以用于从 XML 文档中实际读取 bean 定义。
+//默认实现实例化指定的“documentReaderClass”
 ```
 
 documentReaderClass默认是DefaultBeanDefinitionDocumentReader，这其实也是策略模式，通过setter方法可以更换其实现。
@@ -984,7 +1036,9 @@ protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate d
 
 #### 默认命名空间解析
 
-即import, alias, bean, 嵌套的beans四种元素。parseDefaultElement:
+即import, alias, bean, 嵌套的beans四种元素。parseDefaultElement: 
+
+解析文档中根级别的元素：“import”、“alias”、“bean”。
 
 ```java
 private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
@@ -1072,6 +1126,8 @@ public void registerAlias(String name, String alias) {
 bean节点是Spring最最常见的节点了。
 
 DefaultBeanDefinitionDocumentReader.processBeanDefinition:
+
+处理给定的 bean 元素，解析 bean 定义并将其注册到注册表。
 
 ```java
 protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
